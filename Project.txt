@@ -1,0 +1,105 @@
+import java.net.*;
+import java.io.*;
+import com.restfb.*;
+import com.restfb.types.*;
+import com.restfb.batch.*;
+import com.restfb.exception.*;
+import com.restfb.json.*; 
+import com.restfb.util.*;
+import java.util.*;
+class FacebookAPIProject
+ {
+     String key;
+     ArrayList<String> message,time;
+     String arr[][];//String jagged array storing the names of the users who liked a particular status
+     int array[];//Array storing the length of each row of the above jagged array
+     FacebookAPIProject()
+     {
+     message=new ArrayList<String> ();//Array list storing the message of the status update
+     time=new ArrayList<String>();//Array list storing the time of the status update
+     key=null;
+    }
+    void setAccessToken()//sets key to the access token value provided by the Graph API explorer on developer.facebook.com
+    {
+     key="AAACEdEose0cBALEWJEPePwKJaNRVviFac8ZByVRk5283ZArARhFGFPaXaoTU62KbZCRl1VHQpPJOUqIUTZBJqZAyU9YaUOoazYvQYFZAfFpSmP2FmCwQpD";
+    }
+      public void storage()throws IOException
+       { 
+           setAccessToken();
+        /*downloads and stores the status updates in the various arrays */
+    FacebookClient facebookClient = new DefaultFacebookClient(key);
+    JsonObject status = facebookClient.fetchObject("ronak.shah.775/statuses", JsonObject.class);//downloads the status updates of the user, ronak.shah.775 in this case
+    int i=0,counter=0,arraycounter=0,length=status.getJsonArray("data").length();
+    arr=new String[status.getJsonArray("data").length()][];
+    array=new int[length];
+     for(i=0;i<status.getJsonArray("data").length();i++,arraycounter++)
+     {    
+        JsonObject datadownload=status.getJsonArray("data").getJsonObject(i);//downloads the Json Object of a particular status
+        message.add(datadownload.getString("message"));//gets the message of the status update
+        time.add(datadownload.getString("updated_time"));//gets the updated time of the status
+        try
+        {
+        JsonObject like=status.getJsonArray("data").getJsonObject(arraycounter).getJsonObject("likes");
+        arr[arraycounter]=new String[like.getJsonArray("data").length()];//creates a new row of the jagged array
+        for(int j=0;j<like.getJsonArray("data").length();j++)
+        {
+        JsonObject data=like.getJsonArray("data").getJsonObject(j);//gets Json Object of user data of the user who liked the status
+        arr[arraycounter][j]=data.getString("name");//stores the name of the user who liked the status
+        array[arraycounter]=j;//updates the counter of the counter array
+        }
+        }
+       catch(com.restfb.json.JsonException e)//Avoids run time error for statuses with 0 likes
+        {
+         }
+      }
+     findUser(length); //calls the findUser function
+   }
+    public void print(int length)
+    {
+        /*function prints 
+          the status update along 
+          with the corresponding likes
+        */
+    for(int i=0;i<length;i++)
+    {
+         System.out.println(message.get(i));//prints status message
+        for(int j=0;j<=array[i];j++)
+        if(arr[i]!=null)//prevents run time error due to statuses with 0 likes
+        System.out.println(arr[i][j]);//prints the likes
+    }
+      }
+     public void findUser(int length)
+     {
+      /*function finds the person that follows the given 
+       * facebook user the most based on the number of 
+       * times he/she has liked the user's status
+      */
+      String name="";
+      int max=0,pos=0,count=0;
+      for(int i=0;i<length-1;i++)
+      {
+          for(int j=0;j<array[i];j++)
+          {
+              String compare=arr[i][j];
+              count=0;
+              for(int k=i+1;k<length;k++)
+              {
+                  for(int l=0;l<array[k];l++)
+                  {
+                      if(compare.equals(arr[k][l]))
+                      {
+                          count++;
+                          break;
+                        }
+                    }
+                }
+                if(count>max)
+                {
+                    max=count;
+                    name=compare;
+                }
+            }
+        }
+        System.out.println("Most followed by user: "+name);
+    }
+}
